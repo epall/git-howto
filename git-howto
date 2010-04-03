@@ -46,8 +46,26 @@ class GitHowto < Thor
     File.join(File.dirname(__FILE__), 'howto.md')
   end
   
+  def relevant_words(str)
+    str.downcase.split(" ").select {|w| w.length >= 4}
+  end
+  
   def command_found?(definition, search)
-    return definition.downcase.include? search.downcase
+    def_words = relevant_words(definition)
+    search_words = relevant_words(search)
+    
+    def_words.reject! {|w| w.length < 4 }
+    search_words.reject! {|w| w.length < 4 }
+
+    score = search_words.inject(0) do |score, word|
+      if def_words.include? word
+        score + 1
+      else
+        score
+      end
+    end
+    
+    return (score > search_words.length * 3 / 4)
   end
 end
 
