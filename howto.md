@@ -37,3 +37,8 @@ Create a new named branch and check it out
 ------------------------------------------
 
 git checkout -b BRANCH_NAME
+
+Connect local branch with remote branch for git push
+----------------------------------------------------
+
+git config branch.LOCAL_NAME.merge REMOTE_NAME
