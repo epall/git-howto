@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'thor'
+
+class GitHowto < Thor
+  default_task :find
+  desc "find [STRING]", "Search for how to do something with git"
+  def find(*text)
+    text = text.join(" ")
+    last_line = ''
+    description = nil
+    File.open(find_database) do |db|
+      db.each_line do |line|
+        if line =~ /^-----/ and command_found?(last_line, text)
+          description = last_line
+        elsif description
+          unless line =~ /^\s*$/
+            puts description.chomp+":"
+            puts "  "+line
+            description = nil
+            return
+          end
+        end
+        last_line = line
+      end
+    end
+    puts "Not found"
+  end
+  
+  desc "add \"DESCRIPTION\" \"GIT-COMMAND\"", "Add a command to git-howto's database"
+  def add(description, command)
+    raise "Command must start with 'git'" unless command =~ /^git/
+    File.open(find_database, 'a') do |db|
+      db.puts
+      db.puts description
+      db.puts "-"*description.length
+      db.puts
+      db.puts command
+    end
+  end
+  
+  private
+  
+  def find_database
+    File.join(File.dirname(__FILE__), 'howto.md')
+  end
+  
+  def command_found?(definition, search)
+    return definition.downcase.include? search.downcase
+  end
+end
+
+# hack?!
+unless GitHowto.new.respond_to? ARGV[0].to_sym
+  better_args = ["find"] + ARGV
+end
+
+GitHowto.start(better_args || ARGV)
