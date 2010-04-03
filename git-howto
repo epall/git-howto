@@ -1,77 +1,70 @@
 #!/usr/bin/env ruby
 
-require 'rubygems'
-require 'thor'
-
-class GitHowto < Thor
-  default_task :find
-  desc "find [STRING]", "Search for how to do something with git"
-  def find(*text)
-    text = text.join(" ")
-    last_line = ''
-    description = nil
-    File.open(find_database) do |db|
-      db.each_line do |line|
-        if line =~ /^-----/ and command_found?(last_line, text)
-          description = last_line
-        elsif description
-          unless line =~ /^\s*$/
-            puts description.chomp+":"
-            puts "  "+line
-            description = nil
-            return
-          end
+def find(*text)
+  text = text.join(" ")
+  last_line = ''
+  description = nil
+  File.open(find_database) do |db|
+    db.each_line do |line|
+      if line =~ /^-----/ and command_found?(last_line, text)
+        description = last_line
+      elsif description
+        unless line =~ /^\s*$/
+          puts description.chomp+":"
+          puts "  "+line
+          description = nil
+          return
         end
-        last_line = line
       end
-    end
-    puts "Not found"
-  end
-  
-  desc "add \"DESCRIPTION\" \"GIT-COMMAND\"", "Add a command to git-howto's database"
-  def add(description, command)
-    raise "Command must start with 'git'" unless command =~ /^git/
-    File.open(find_database, 'a') do |db|
-      db.puts
-      db.puts description
-      db.puts "-"*description.length
-      db.puts
-      db.puts command
+      last_line = line
     end
   end
+  puts "Not found"
+end
   
-  private
-  
-  def find_database
-    File.join(File.dirname(__FILE__), 'howto.md')
-  end
-  
-  def relevant_words(str)
-    str.downcase.split(" ").select {|w| w.length >= 4}
-  end
-  
-  def command_found?(definition, search)
-    def_words = relevant_words(definition)
-    search_words = relevant_words(search)
-    
-    def_words.reject! {|w| w.length < 4 }
-    search_words.reject! {|w| w.length < 4 }
-
-    score = search_words.inject(0) do |score, word|
-      if def_words.include? word
-        score + 1
-      else
-        score
-      end
-    end
-    
-    return (score > search_words.length * 3 / 4)
+def add(description, command)
+  raise "Command must start with 'git'" unless command =~ /^git/
+  File.open(find_database, 'a') do |db|
+    db.puts
+    db.puts description
+    db.puts "-"*description.length
+    db.puts
+    db.puts command
   end
 end
 
-# hack?!
-unless GitHowto.new.respond_to? ARGV[0].to_sym
-  better_args = ["find"] + ARGV
+#internal
+
+def find_database
+  File.join(File.dirname(__FILE__), 'howto.md')
 end
 
-GitHowto.start(better_args || ARGV)
+def relevant_words(str)
+  str.downcase.split(" ").select {|w| w.length >= 4}
+end
+
+def command_found?(definition, search)
+  def_words = relevant_words(definition)
+  search_words = relevant_words(search)
+
+  def_words.reject! {|w| w.length < 4 }
+  search_words.reject! {|w| w.length < 4 }
+
+  score = search_words.inject(0) do |score, word|
+    if def_words.include? word
+      score + 1
+    else
+      score
+    end
+  end
+
+  return (score > search_words.length * 3 / 4)
+end
+
+# main
+
+if ARGV[0] == "add"
+  add(*ARGV[1..-1])
+else
+  find(*ARGV)
+end
