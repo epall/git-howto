@@ -22,3 +22,8 @@ Push to a remote branch
 -----------------------
 
 git push REMOTE LOCAL-BRANCH:REMOTE-BRANCH
+
+edit commit message
+-------------------
+
+git commit --amend
